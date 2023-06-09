@@ -1,11 +1,12 @@
 import { Drawer, Box, List, ListItem, ListItemButton, ListItemText, createTheme, ThemeProvider } from "@mui/material";
 import React from "react";
 import '@fontsource-variable/comfortaa/';
+import logo from "../png/logo-no-background.png";
 
 const theme = createTheme({
     palette: {
       background: {
-        paper: '#8D86C9',
+        paper: '#F7ECE1',
       },
       text: {
         primary: '#242038',
@@ -18,7 +19,8 @@ const theme = createTheme({
     typography:{
         fontFamily: 'Comfortaa Variable',
         body1: {
-            fontWeight: 800
+            fontWeight: 1000,
+            fontSize: "20px"
         }
     }
   });
@@ -29,7 +31,8 @@ export default function Menu(){
           sx={{ width: 250, color: "text.primary" }}
           role="presentation"
         >
-          <List>
+         <img src={logo} alt="logo" style={{margin: "20px", width: "-webkit-fill-available"}}/>
+            <List>
             {['Listar Consultas', 'Criar Consulta', 'Cancelar Consulta'].map((text, index) => (
               <ListItem key={text} disablePadding>
                 <ListItemButton>
