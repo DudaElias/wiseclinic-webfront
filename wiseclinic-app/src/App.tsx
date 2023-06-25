@@ -1,9 +1,13 @@
+import { LocalizationProvider } from '@mui/x-date-pickers';
 import './App.css';
-import Home from './pages/Home';
+import Menu from './components/Menu';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
 function App() {
   return (
-      <Home/>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Menu/>
+    </LocalizationProvider>
   );
 }
 
