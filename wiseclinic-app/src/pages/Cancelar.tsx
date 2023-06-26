@@ -1,24 +1,84 @@
 import { Box, Button } from "@mui/material";
 import { GridColDef, GridRenderCellParams, DataGrid } from "@mui/x-data-grid";
 import { DatePicker } from "@mui/x-date-pickers";
-import React from "react";
+import dayjs, { Dayjs } from "dayjs";
+import React, { useState } from "react";
+import { formatDate, formatHorario } from "../utils/formaters";
+import { Consulta } from "../utils/interfaces";
 
-const columns: GridColDef[] = [
+export default function Cancelar() {
+
+  const [rows, setRows] = useState<Consulta[]>([])
+  const [dia, setDia] = React.useState<String | null>();
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<String>();
+
+  function handleDataSelection(newData: Dayjs | null) {
+    if (newData != null) {
+      const dataString = formatDate(newData)
+      setDia(dataString)
+      fetch(`/consultas/${dataString}`).then(response => response.json() as Promise<Consulta[]>)
+        .then(data => {
+          let consultas = data.map((consulta) => {
+            return {
+              ...consulta,
+              profissional: consulta.medico ? consulta.medico : consulta.dentista,
+              horario: formatHorario(consulta.horario)
+            };
+          })
+          setRows(consultas)
+        })
+    }
+  }
+
+  async function handleCancelar(id: String) {
+    await fetch(`/consultas/${id}`, {
+      method: "delete"
+    })
+    setRows(rows.filter(function (row) { return row.id !== id; }))
+  }
+
+  const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'cancelar', headerName: 'Cancelar', width: 120,
-        renderCell: (params: GridRenderCellParams<Date>) => (
-          <Button variant="contained" color="error">Cancelar</Button>)
+    {
+      field: 'cancelar', headerName: 'Cancelar', width: 120,
+      renderCell: (params: GridRenderCellParams<any>) => (
+        <Button
+          variant="contained"
+          color="error"
+          onClick={() => { handleCancelar(params.row.id) }}
+        >Cancelar</Button>)
     },
     {
-      field: 'nomePaciente',
+      field: 'paciente',
       headerName: 'Paciente',
+      renderCell: (params) => {
+        return (
+          <>
+            <div>{params.value.nome}</div>
+          </>
+        );
+      },
+      editable: false,
+      width: 200
+    },
+    {
+      field: 'profissional',
+      headerName: 'Profissional',
       width: 200,
+      renderCell: (params) => {
+        return (
+          <>
+            <div>{params.value.nome}</div>
+          </>
+        );
+      },
       editable: false,
     },
     {
-      field: 'nomeProfissional',
-      headerName: 'Profissional',
-      width: 200,
+      field: 'horario',
+      headerName: 'Horario',
+      width: 100,
       editable: false,
     },
     {
@@ -28,40 +88,29 @@ const columns: GridColDef[] = [
       editable: false,
     }
   ];
-  
-  const rows = [
-    { id: 1, nomePaciente: 'Snow', nomeProfissional: 'Jon', especialidade: 'ORTODONTIA' },
-    { id: 2, nomePaciente: 'Lannister', nomeProfissional: 'Cersei', especialidade: 'ORTODONTIA' },
-    { id: 3, nomePaciente: 'Lannister', nomeProfissional: 'Jaime', especialidade: 'ORTODONTIA' },
-    { id: 4, nomePaciente: 'Stark', nomeProfissional: 'Arya', especialidade: 'ORTODONTIA' },
-    { id: 5, nomePaciente: 'Targaryen', nomeProfissional: 'Daenerys', especialidade: null },
-    { id: 6, nomePaciente: 'Melisandre', nomeProfissional: null, especialidade: 'ORTODONTIA' },
-    { id: 7, nomePaciente: 'Clifford', nomeProfissional: 'Ferrara', especialidade: 'ORTODONTIA' },
-    { id: 8, nomePaciente: 'Frances', nomeProfissional: 'Rossini', especialidade: 'ORTODONTIA' },
-    { id: 9, nomePaciente: 'Roxie', nomeProfissional: 'Harvey', especialidade: 'ORTODONTIA' },
-  ];
+  return (
+    <React.Fragment>
+      <div className="listar">
+        <DatePicker label="Data" className="datePicker"
+          defaultValue={dayjs(new Date())}
+          onChange={(newData) => handleDataSelection(newData)}
+        />
+        <Box sx={{ height: 400, width: '100%' }}>
 
-export default function Cancelar(){
-    return (
-        <React.Fragment>
-            <div className="listar">
-            <DatePicker label="Data" className="datePicker"/>
-            <Box sx={{ height: 400, width: '100%' }}>
-
-            <DataGrid
-        rows={rows}
-        columns={columns}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              pageSize: 20,
-            },
-          },
-        }}
-        pageSizeOptions={[20]}
-        disableRowSelectionOnClick
-      />
-      </Box>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  pageSize: 20,
+                },
+              },
+            }}
+            pageSizeOptions={[20]}
+            disableRowSelectionOnClick
+          />
+        </Box>
       </div>
-        </React.Fragment>        )
+    </React.Fragment>)
 }
