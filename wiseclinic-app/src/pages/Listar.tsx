@@ -20,7 +20,6 @@ export default function Listar() {
           let consultas = data.map((consulta) => {
             return {
               ...consulta,
-              profissional: consulta.medico ? consulta.medico : consulta.dentista,
               horario: formatHorario(consulta.horario)
             };
           })
@@ -37,7 +36,7 @@ export default function Listar() {
 
   function isCheckedIn(id: String) {
     const row = rows.find((row) => row.id === id)
-    return row?.check_in
+    return row?.checkin
   }
 
   const columns: GridColDef[] = [
@@ -48,7 +47,7 @@ export default function Listar() {
         <Checkbox
           size="small"
           onClick={() => { handleCheckIn(params.row.id) }}
-          defaultChecked={isCheckedIn(params.row.id) ? true : false}
+          defaultChecked={ isCheckedIn(params.row.id) ? true : false}
           style={{ marginLeft: 16 }}
           tabIndex={params.hasFocus ? 0 : -1}
         />)

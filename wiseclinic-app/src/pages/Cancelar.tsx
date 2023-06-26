@@ -22,7 +22,6 @@ export default function Cancelar() {
           let consultas = data.map((consulta) => {
             return {
               ...consulta,
-              profissional: consulta.medico ? consulta.medico : consulta.dentista,
               horario: formatHorario(consulta.horario)
             };
           })

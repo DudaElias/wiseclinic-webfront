@@ -4,16 +4,15 @@ export interface Consulta {
     cpf: string,
     nome: string,
   },
-  check_in: boolean,
-  medico: {
-    nome: string
-  }
-  dentista: {
-    nome: string
-  },
+  checkin: boolean,
   profissional: {
     nome: string,
   },
   horario: string,
   especialidade: string
+}
+
+export interface Profissional {
+  nome: string,
+  doc: string
 }
