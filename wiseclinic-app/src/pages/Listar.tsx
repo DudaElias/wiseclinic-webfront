@@ -1,5 +1,5 @@
-import { Alert, Box, Checkbox } from "@mui/material";
-import { DataGrid, GridColDef, GridRenderCellParams, GridValueGetterParams } from "@mui/x-data-grid";
+import { Box, Checkbox } from "@mui/material";
+import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import React, { useState } from "react";
@@ -9,10 +9,10 @@ import { Consulta } from "../utils/interfaces";
 export default function Listar() {
 
   const [rows, setRows] = useState<Consulta[]>([])
-  const [dia, setDia] = React.useState<String | null>();
+  const [, setDia] = React.useState<String | null>();
 
   function handleDataSelection(newData: Dayjs | null) {
-    if (newData != null) {
+    if (newData != null && newData.get('year').toString().length === 4) {
       const dataString = formatDate(newData)
       setDia(dataString)
       fetch(`/consultas/${dataString}`).then(response => response.json() as Promise<Consulta[]>)
@@ -26,6 +26,8 @@ export default function Listar() {
           setRows(consultas)
         })
     }
+    else
+      setRows([])
   }
 
   async function handleCheckIn(id: String) {
@@ -40,18 +42,6 @@ export default function Listar() {
   }
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    {
-      field: 'check_in', headerName: 'Check In', width: 90,
-      renderCell: (params: GridRenderCellParams<any>) => (
-        <Checkbox
-          size="small"
-          onClick={() => { handleCheckIn(params.row.id) }}
-          defaultChecked={ isCheckedIn(params.row.id) ? true : false}
-          style={{ marginLeft: 16 }}
-          tabIndex={params.hasFocus ? 0 : -1}
-        />)
-    },
     {
       field: 'paciente',
       headerName: 'Paciente',
@@ -89,6 +79,17 @@ export default function Listar() {
       headerName: 'Especialidade',
       width: 200,
       editable: false,
+    },
+    {
+      field: 'check_in', headerName: 'Check In', width: 90,
+      renderCell: (params: GridRenderCellParams<any>) => (
+        <Checkbox
+          size="small"
+          onClick={() => { handleCheckIn(params.row.id) }}
+          defaultChecked={ isCheckedIn(params.row.id) ? true : false}
+          style={{ marginLeft: 16 }}
+          tabIndex={params.hasFocus ? 0 : -1}
+        />)
     }
   ];
 
@@ -97,6 +98,7 @@ export default function Listar() {
       <div className="listar">
         <DatePicker label="Data" className="datePicker"
           defaultValue={dayjs(new Date())}
+          format="DD/MM/YYYY"
           onChange={(newData) => handleDataSelection(newData)}
         />
         <Box sx={{ height: 400, width: '100%' }}>

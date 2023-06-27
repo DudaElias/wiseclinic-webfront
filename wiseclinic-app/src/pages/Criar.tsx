@@ -1,4 +1,4 @@
-import { Button, Checkbox, FormControl, FormGroup, FormLabel, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
+import { Alert, Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import React, { useState } from "react";
 import { formatDate, formatHorario } from "../utils/formaters";
@@ -14,7 +14,10 @@ export default function Criar() {
     const [profissional, setProfissional] = useState<string>('')
     const [horarios, setHorarios] = useState<string[]>([])
     const [horario, setHorario] = useState<string>('')
-
+    const [paciente, setPaciente] = useState<string>('')
+    const [hasError, setHasError] = useState(false)
+    const [isCreated, setIsCreate] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
 
     const handleSelectTipo = (event: SelectChangeEvent) => {
         setTipo(event.target.value)
@@ -26,31 +29,117 @@ export default function Criar() {
 
     const handleSelectEspecialidade = (event: SelectChangeEvent) => {
         setEspecialidade(event.target.value)
-        fetch(`/${tipo === "MEDICINA" ? "medicos": "dentistas"}/${event.target.value}`).then(data => data.json() as Promise<Profissional[]>)
-        .then(data =>
-            setProfissionais(data)
-        )
+        fetch(`/${tipo === "MEDICINA" ? "medicos" : "dentistas"}/${event.target.value}`).then(data => data.json() as Promise<Profissional[]>)
+            .then(data =>
+                setProfissionais(data)
+            )
     }
 
     const handleSelectProfissional = (event: SelectChangeEvent) => {
         setProfissional(event.target.value)
-        fetch(`/${tipo === "MEDICINA" ? "medicos": "dentistas"}/agenda/${event.target.value}/${dia}`).then(data => data.json() as Promise<string[]>)
-        .then(data => {
+        fetch(`/${tipo === "MEDICINA" ? "medicos" : "dentistas"}/agenda/${event.target.value}/${dia}`).then(data => data.json() as Promise<string[]>)
+            .then(data => {
                 data = data.map(d => d = formatHorario(d))
                 setHorarios(data)
             }
-        )
+            )
     }
 
     const handleSelectHorario = (event: SelectChangeEvent) => {
         setHorario(event.target.value)
-        fetch(`/`)
+
     }
 
     function handleDataSelection(newData: Dayjs | null) {
-        if (newData != null) {
+        if (newData != null && newData.get('year').toString().length === 4 && profissional) {
             const dataString = formatDate(newData)
+            fetch(`/${tipo === "MEDICINA" ? "medicos" : "dentistas"}/agenda/${profissional}/${dataString}`).then(data => data.json() as Promise<string[]>)
+                .then(data => {
+                    data = data.map(d => d = formatHorario(d))
+                    setHorarios(data)
+                }
+                )
             setDia(dataString)
+        }
+    }
+
+    function handleSubmit() {
+        if (!especialidade || !tipo || !paciente || !profissional || !horario) {
+            setHasError(true)
+            setErrorMessage("Dados não preenchidos corretamente!")
+        }
+        else {
+            const body = {
+                data: dia + "T" + horario + ":00",
+                profissional: {
+                    area: tipo,
+                    especialidade,
+                    documento: profissional
+                },
+                paciente: {
+                    cpf: paciente
+                }
+            }
+            setHasError(false)
+            fetch('consultas/', {
+                method: "post",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            })
+            setIsCreate(true)
+        }
+    }
+
+    function handlePaciente(cpf: string) {
+        var Soma = 0;
+        let verificado = true
+        if (cpf === undefined) {
+            verificado = false;
+        }
+
+        var strCPF = cpf.replace('.', '').replace('.', '').replace('-', '');
+        if (strCPF === '00000000000' || strCPF === '11111111111' || strCPF === '22222222222' || strCPF === '33333333333' ||
+            strCPF === '44444444444' || strCPF === '55555555555' || strCPF === '66666666666' || strCPF === '77777777777' || strCPF === '88888888888' ||
+            strCPF === '99999999999' || strCPF.length !== 11) {
+            verificado = false;
+        }
+
+        for (let i = 1; i <= 9; i++) {
+            Soma = Soma + parseInt(strCPF.substring(i - 1, i)) * (11 - i);
+        }
+
+        var Resto = (Soma * 10) % 11;
+        if ((Resto === 10) || (Resto === 11)) {
+            Resto = 0;
+        }
+
+        if (Resto !== parseInt(strCPF.substring(9, 10))) {
+            verificado = false;
+        }
+
+        Soma = 0;
+        for (let k = 1; k <= 10; k++) {
+            Soma = Soma + parseInt(strCPF.substring(k - 1, k)) * (12 - k)
+        }
+
+        Resto = (Soma * 10) % 11;
+        if ((Resto === 10) || (Resto === 11)) {
+            Resto = 0;
+        }
+
+        if (Resto !== parseInt(strCPF.substring(10, 11))) {
+            verificado = false;
+        }
+        if(!verificado){
+            setHasError(true)
+            setErrorMessage("CPF inválido")
+        }
+        else{
+            setHasError(false)
+            setPaciente(cpf)
         }
     }
 
@@ -61,6 +150,7 @@ export default function Criar() {
                 <span className="title">Criar Consulta</span>
                 <TextField
                     type="text"
+                    onChange={(v) => handlePaciente(v.target.value)} //Add your setVariable to this line
                     color='primary'
                     label="CPF do Paciente"
                 />
@@ -90,13 +180,15 @@ export default function Criar() {
                 <DatePicker label="Data" className="datePicker"
                     defaultValue={dayjs(new Date())}
                     disabled={tipo ? false : true}
+                    format="DD/MM/YYYY"
+                    disablePast
                     onChange={(newData) => handleDataSelection(newData)} />
                 <FormControl disabled={(tipo && especialidade) ? false : true}>
                     <InputLabel id="demo-simple-select-autowidth-label">Nome Profissional</InputLabel>
                     <Select label="Especialidade"
                         value={profissional}
                         onChange={handleSelectProfissional}>
-                         {profissionais ? profissionais.map(p => {
+                        {profissionais ? profissionais.map(p => {
                             return (
                                 <MenuItem key={p.doc} value={p.doc}>
                                     {p.nome}
@@ -105,7 +197,7 @@ export default function Criar() {
                         }) : null}
                     </Select>
                 </FormControl>
-                <FormControl  disabled={profissional ? false : true}>
+                <FormControl disabled={profissional ? false : true}>
                     <InputLabel id="demo-simple-select-autowidth-label">Horários</InputLabel>
                     <Select label="Horários"
                         value={horario}
@@ -119,7 +211,9 @@ export default function Criar() {
                         }) : null}
                     </Select>
                 </FormControl>
-                <Button variant="contained" color="secondary" type="submit">Criar Consulta</Button>
+                <Button variant="contained" color="secondary" type="submit" onClick={handleSubmit}>Criar Consulta</Button>
+                {hasError ? <Alert severity="error">{errorMessage}</Alert> : null}
+                {isCreated ? <Alert severity="success"> Consulta criada com sucesso!</Alert> : null}
             </FormControl>
         </React.Fragment >
     )
